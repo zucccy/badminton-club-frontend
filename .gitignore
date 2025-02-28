@@ -1,0 +1,12 @@
+# 忽略 node_modules 目录
+node_modules/
+
+# 忽略 .env 文件（通常包含敏感信息）
+.env
+
+# 忽略日志文件
+*.log
+
+# 忽略 IDE 或编辑器生成的配置文件
+.idea/
+.vscode/
