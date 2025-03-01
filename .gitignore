@@ -1,12 +1,41 @@
-# 忽略 node_modules 目录
-node_modules/
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# 忽略 .env 文件（通常包含敏感信息）
-.env
+# dependencies
+**/node_modules
+# roadhog-api-doc ignore
+/src/utils/request-temp.js
+_roadhog-api-doc
 
-# 忽略日志文件
+# production
+/dist
+
+# misc
+.DS_Store
+npm-debug.log*
+yarn-error.log
+
+/coverage
+.idea
+yarn.lock
+package-lock.json
+*bak
+.vscode
+
+
+# visual studio code
+.history
 *.log
+functions/*
+.temp/**
 
-# 忽略 IDE 或编辑器生成的配置文件
-.idea/
-.vscode/
+# umi
+.umi
+.umi-production
+.umi-test
+
+# screenshot
+screenshot
+.firebase
+.eslintcache
+
+build
