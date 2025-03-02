@@ -3,9 +3,9 @@
 
 declare namespace API {
   type CurrentUser = {
-    name?: string;
+    username?: string;
     avatar?: string;
-    userid?: string;
+    id?: string;
     email?: string;
     signature?: string;
     title?: string;
@@ -14,7 +14,7 @@ declare namespace API {
     notifyCount?: number;
     unreadCount?: number;
     country?: string;
-    access?: string;
+    role?: string;
     geographic?: {
       province?: { label?: string; key?: string };
       city?: { label?: string; key?: string };
@@ -24,33 +24,38 @@ declare namespace API {
   };
 
   type LoginResult = {
-    status?: string;
-    type?: string;
+    msg?: string;
+    code?: number;
     currentAuthority?: string;
   };
 
   type PageParams = {
     current?: number;
     pageSize?: number;
+    sortField?: string;
+    sortOrder?: string;
   };
 
   type RuleListItem = {
-    key?: number;
+    id?: string;
+    name?: string;
+    gender?: string;
+    age?: number;
+    phone?: string;
+    current_level?: string;
     disabled?: boolean;
     href?: string;
     avatar?: string;
-    name?: string;
-    owner?: string;
     desc?: string;
     callNo?: number;
     status?: number;
-    updatedAt?: string;
-    createdAt?: string;
+    create_time?: string;
+    update_time?: string;
     progress?: number;
   };
 
   type RuleList = {
-    data?: RuleListItem[];
+    records?: RuleListItem[];
     /** 列表的内容总数 */
     total?: number;
     success?: boolean;
@@ -62,17 +67,15 @@ declare namespace API {
   };
 
   type LoginParams = {
-    username?: string;
+    account?: string;
     password?: string;
-    autoLogin?: boolean;
-    type?: string;
   };
 
   type ErrorResponse = {
     /** 业务约定的错误码 */
-    errorCode: string;
+    code: string;
     /** 业务上的错误信息 */
-    errorMessage?: string;
+    msg?: string;
     /** 业务上的请求是否成功 */
     success?: boolean;
   };

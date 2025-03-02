@@ -2,27 +2,27 @@
 /* eslint-disable */
 import { request } from '@umijs/max';
 
-/** 获取当前的用户 GET /api/currentUser */
+/** 获取当前的用户 GET /api/user/get/login_user */
 export async function currentUser(options?: { [key: string]: any }) {
   return request<{
     data: API.CurrentUser;
-  }>('/api/currentUser', {
+  }>('/api/user/get/login_user', {
     method: 'GET',
     ...(options || {}),
   });
 }
 
-/** 退出登录接口 POST /api/login/outLogin */
+/** 退出登录接口 POST /api/user/logout */
 export async function outLogin(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/api/login/outLogin', {
+  return request<Record<string, any>>('/api/user/logout', {
     method: 'POST',
     ...(options || {}),
   });
 }
 
-/** 登录接口 POST /api/login/account */
+/** 登录接口 POST /api/user/login */
 export async function login(body: API.LoginParams, options?: { [key: string]: any }) {
-  return request<API.LoginResult>('/api/login/account', {
+  return request<API.LoginResult>('/api/user/login', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -40,8 +40,8 @@ export async function getNotices(options?: { [key: string]: any }) {
   });
 }
 
-/** 获取规则列表 GET /api/rule */
-export async function rule(
+/** 获取会员信息列表 GET /api/rule */
+export async function member(
   params: {
     // query
     /** 当前的页码 */
@@ -51,7 +51,7 @@ export async function rule(
   },
   options?: { [key: string]: any },
 ) {
-  return request<API.RuleList>('/api/rule', {
+  return request<API.RuleList>('/api/member/list', {
     method: 'GET',
     params: {
       ...params,

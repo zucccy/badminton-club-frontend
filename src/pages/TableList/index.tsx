@@ -1,4 +1,4 @@
-import { addRule, removeRule, rule, updateRule } from '@/services/ant-design-pro/api';
+import { addRule, removeRule, member, updateRule } from '@/services/ant-design-pro/api';
 import { PlusOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
 import {
@@ -49,7 +49,7 @@ const handleUpdate = async (fields: FormValueType) => {
     await updateRule({
       name: fields.name,
       desc: fields.desc,
-      key: fields.key,
+      key: fields.id,
     });
     hide();
     message.success('Configuration is successful');
@@ -72,7 +72,7 @@ const handleRemove = async (selectedRows: API.RuleListItem[]) => {
   if (!selectedRows) return true;
   try {
     await removeRule({
-      key: selectedRows.map((row) => row.key),
+      key: selectedRows.map((row) => row.id),
     });
     hide();
     message.success('Deleted successfully and will refresh soon');
@@ -99,16 +99,11 @@ const TableList: React.FC = () => {
   const [currentRow, setCurrentRow] = useState<API.RuleListItem>();
   const [selectedRowsState, setSelectedRows] = useState<API.RuleListItem[]>([]);
 
-  /**
-   * @en-US International configuration
-   * @zh-CN 国际化配置
-   * */
-
   const columns: ProColumns<API.RuleListItem>[] = [
     {
-      title: '规则名称',
-      dataIndex: 'name',
-      tip: 'The rule name is the unique key',
+      title: 'ID',
+      dataIndex: 'id',
+      tip: 'The id is the unique key',
       render: (dom, entity) => {
         return (
           <a
@@ -123,44 +118,47 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: '描述',
-      dataIndex: 'desc',
+      title: '姓名',
+      dataIndex: 'name',
+    },
+    {
+      title: '性别',
+      dataIndex: 'gender',
       valueType: 'textarea',
     },
     {
-      title: '服务调用次数',
-      dataIndex: 'callNo',
+      title: '年龄',
+      dataIndex: 'age',
       sorter: true,
-      hideInForm: true,
-      renderText: (val: string) => `${val}${'万'}`,
+      // renderText: (val: string) => `${val}${'万'}`,
     },
     {
-      title: '状态',
-      dataIndex: 'status',
+      title: '手机号',
+      dataIndex: 'phone',
+    },
+    {
+      title: '当前组别',
+      dataIndex: 'current_level',
       hideInForm: true,
       valueEnum: {
         0: {
-          text: '关闭',
-          status: 'Default',
+          text: '丙组',
+          status: '0',
         },
         1: {
-          text: '运行中',
-          status: 'Processing',
+          text: '乙组',
+          status: '1',
         },
         2: {
-          text: '已上线',
-          status: 'Success',
-        },
-        3: {
-          text: '异常',
-          status: 'Error',
+          text: '甲组',
+          status: '2',
         },
       },
     },
     {
-      title: '上次调度时间',
+      title: '创建时间',
       sorter: true,
-      dataIndex: 'updatedAt',
+      dataIndex: 'create_time',
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
         const status = form.getFieldValue('status');
@@ -174,31 +172,47 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: '操作',
-      dataIndex: 'option',
-      valueType: 'option',
-      render: (_, record) => [
-        <a
-          key="config"
-          onClick={() => {
-            handleUpdateModalOpen(true);
-            setCurrentRow(record);
-          }}
-        >
-          配置
-        </a>,
-        <a key="subscribeAlert" href="https://procomponents.ant.design/">
-          订阅警报
-        </a>,
-      ],
+      title: '修改时间',
+      sorter: true,
+      dataIndex: 'update_time',
+      valueType: 'dateTime',
+      renderFormItem: (item, { defaultRender, ...rest }, form) => {
+        const status = form.getFieldValue('status');
+        if (`${status}` === '0') {
+          return false;
+        }
+        if (`${status}` === '3') {
+          return <Input {...rest} placeholder={'请输入异常原因！'} />;
+        }
+        return defaultRender(item);
+      },
     },
+    // {
+    //   title: '操作',
+    //   dataIndex: 'option',
+    //   valueType: 'option',
+    //   render: (_, record) => [
+    //     <a
+    //       key="config"
+    //       onClick={() => {
+    //         handleUpdateModalOpen(true);
+    //         setCurrentRow(record);
+    //       }}
+    //     >
+    //       配置
+    //     </a>,
+    //     <a key="subscribeAlert" href="https://procomponents.ant.design/">
+    //       订阅警报
+    //     </a>,
+    //   ],
+    // },
   ];
   return (
     <PageContainer>
       <ProTable<API.RuleListItem, API.PageParams>
         headerTitle={'查询表格'}
         actionRef={actionRef}
-        rowKey="key"
+        rowKey="id"
         search={{
           labelWidth: 120,
         }}
@@ -213,7 +227,12 @@ const TableList: React.FC = () => {
             <PlusOutlined /> 新建
           </Button>,
         ]}
-        request={rule}
+        request={async (params: any) => {
+          const response = await member(params.current, params.pageSize);
+          return {
+            data: response.data.records,
+          };
+        }}
         columns={columns}
         rowSelection={{
           onChange: (_, selectedRows) => {
