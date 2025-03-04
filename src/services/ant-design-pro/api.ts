@@ -32,6 +32,27 @@ export async function login(body: API.LoginParams, options?: { [key: string]: an
   });
 }
 
+export async function importMemberList(file: File, options?: { [key: string]: any }) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return request<Record<string, any>>('/api/member/import', {
+    data: formData,
+    method: 'POST',
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    ...(options || {}),
+  });
+}
+
+export async function downloadTemplate(options?: { [key: string]: any }) {
+  return request('/api/member/template', {
+    method: 'GET',
+    responseType: 'blob',
+    ...(options || {}),
+  });
+}
+
 /** 此处后端没有提供注释 GET /api/notices */
 export async function getNotices(options?: { [key: string]: any }) {
   return request<API.NoticeIconList>('/api/notices', {
@@ -48,6 +69,7 @@ export async function member(
     current?: number;
     /** 页面的容量 */
     pageSize?: number;
+    name?: string;
   },
   options?: { [key: string]: any },
 ) {

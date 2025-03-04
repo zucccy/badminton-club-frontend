@@ -1,5 +1,5 @@
-import { addRule, removeRule, member, updateRule } from '@/services/ant-design-pro/api';
-import { PlusOutlined } from '@ant-design/icons';
+import { addRule, removeRule, member, updateRule, importMemberList, downloadTemplate } from '@/services/ant-design-pro/api';
+import { PlusOutlined, UploadOutlined, ExportOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
 import {
   FooterToolbar,
@@ -11,10 +11,12 @@ import {
   ProTable,
 } from '@ant-design/pro-components';
 import '@umijs/max';
-import { Button, Drawer, Input, message } from 'antd';
+import { Button, Drawer, Input, message, Upload, Spin } from 'antd';
 import React, { useRef, useState } from 'react';
 import type { FormValueType } from './components/UpdateForm';
 import UpdateForm from './components/UpdateForm';
+import { v4 as uuidv4 } from 'uuid';
+const ExportJsonExcel = require('js-export-excel');
 
 /**
  * @en-US Add node
@@ -89,6 +91,7 @@ const TableList: React.FC = () => {
    * @zh-CN 新建窗口的弹窗
    *  */
   const [createModalOpen, handleModalOpen] = useState<boolean>(false);
+  const [importModalOpen, handleImportModalOpen] = useState<boolean>(false);
   /**
    * @en-US The pop-up window of the distribution update window
    * @zh-CN 分布更新窗口的弹窗
@@ -98,6 +101,93 @@ const TableList: React.FC = () => {
   const actionRef = useRef<ActionType>();
   const [currentRow, setCurrentRow] = useState<API.RuleListItem>();
   const [selectedRowsState, setSelectedRows] = useState<API.RuleListItem[]>([]);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [exportExcelLoading, setExportExcelLoading] = useState(false); //导出loading
+  const [tableData, setTableData] = useState<API.RuleListItem[]>([]);
+
+
+  const downloadMemberTemplate = async() => {
+    try {
+      const response = await downloadTemplate();
+      const urlObj = window.URL.createObjectURL(new Blob([response]));
+      const link = document.createElement('a');
+      link.href = urlObj;
+      // 设置下载的文件名，这里假设服务器响应头中指定的文件名是 member_import_template.xlsx
+      link.download = 'member_import_template.xlsx';
+      link.click();
+      // 释放 URL 对象
+      window.URL.revokeObjectURL(urlObj);
+    } catch (error) {
+      console.error('导入会员信息模板下载失败', error);
+    }
+  };
+
+  const exportExcel = () => {
+    setExportExcelLoading(true);
+    let sheetFilter = ['id', 'name', 'gender', 'age', 'phone', 'current_level', 'create_time', 'update_time'];
+    // 遍历选中的行数据
+    // tableData.forEach((item) => {
+    //   if (item.gender === 'male') {
+    //     item.gender = '男'
+    //   } else {
+    //     item.gender = '女'
+    //   }
+    // });
+    let option: any = {};
+    option.fileName = '会员信息表_' + uuidv4().slice(0, 6);
+    option.datas = [
+      {
+        sheetData: tableData,      //根据需求请求过来的json数据
+        sheetName: '会员信息表',
+        sheetFilter: sheetFilter,   //表数据对应sheetData中的数据
+        sheetHeader: [             //表头，与sheetFilter 中各字段对应
+          '唯一编号',
+          '姓名',
+          '性别',
+          '年龄',
+          '手机号',
+          '当前组别',
+          '创建时间',
+          '修改时间'
+        ],
+      },
+    ];
+    let toExcel = new ExportJsonExcel(option);
+    toExcel.saveExcel();
+    setExportExcelLoading(false);
+  };
+
+const handleUploadChange = (info: any) => {
+  if (info.file.status === 'done') {
+    setUploadedFile(info.file.originFileObj);
+  } else if (info.file.status === 'error') {
+    message.error('文件上传失败');
+  }
+};
+
+// 处理文件上传的函数
+const handleUpload = async (file: File) => {
+  if (uploadedFile) {
+    try {
+      // 发送 POST 请求到后端 /api/member/import 接口
+      const response = await importMemberList(file);
+      if (response.code === 200 && response.data.processNum !== 0) {
+        message.success('会员信息导入成功');
+        // 上传成功后可以选择关闭 Modal
+        handleImportModalOpen(false);
+        setCurrentRow(undefined);
+        if (actionRef.current) {
+          actionRef.current.reload();
+        }
+      } else {
+        message.error('会员信息导入失败，原因：' + response.msg);
+      }
+    } catch (error) {
+      console.error('会员信息导入失败', error);
+    }
+    setUploadedFile(null);
+  }
+};
 
   const columns: ProColumns<API.RuleListItem>[] = [
     {
@@ -124,13 +214,33 @@ const TableList: React.FC = () => {
     {
       title: '性别',
       dataIndex: 'gender',
-      valueType: 'textarea',
+      valueEnum: {
+        'male': {
+          text: '男'
+        },
+        'female': {
+          text: '女'
+        }
+      },
     },
     {
       title: '年龄',
       dataIndex: 'age',
+      search: false,
       sorter: true,
       // renderText: (val: string) => `${val}${'万'}`,
+    },
+    {
+      title: '开始年龄',
+      hideInTable: true,//在列表中不显示
+      dataIndex: 'start_age',
+      valueType: 'digit',
+    },
+    {
+      title: '结束年龄',
+      hideInTable: true,//在列表中不显示
+      dataIndex: 'end_age',
+      valueType: 'digit',
     },
     {
       title: '手机号',
@@ -142,7 +252,7 @@ const TableList: React.FC = () => {
       hideInForm: true,
       valueEnum: {
         0: {
-          text: '丙组',
+          text: '甲组',
           status: '0',
         },
         1: {
@@ -150,7 +260,7 @@ const TableList: React.FC = () => {
           status: '1',
         },
         2: {
-          text: '甲组',
+          text: '丙组',
           status: '2',
         },
       },
@@ -158,6 +268,7 @@ const TableList: React.FC = () => {
     {
       title: '创建时间',
       sorter: true,
+      search: false,
       dataIndex: 'create_time',
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
@@ -174,6 +285,7 @@ const TableList: React.FC = () => {
     {
       title: '修改时间',
       sorter: true,
+      search: false,
       dataIndex: 'update_time',
       valueType: 'dateTime',
       renderFormItem: (item, { defaultRender, ...rest }, form) => {
@@ -208,37 +320,77 @@ const TableList: React.FC = () => {
     // },
   ];
   return (
+    <Spin spinning={exportExcelLoading} tip="数据导出中...">
     <PageContainer>
       <ProTable<API.RuleListItem, API.PageParams>
-        headerTitle={'查询表格'}
+        headerTitle={'会员信息'}
         actionRef={actionRef}
         rowKey="id"
+        pagination={{
+          showQuickJumper: true
+        }}
         search={{
-          labelWidth: 120,
+          labelWidth: 120
         }}
         toolBarRender={() => [
+          // <Button
+          //   type="primary"
+          //   key="primary"
+          //   onClick={() => {
+          //     handleModalOpen(true);
+          //   }}
+          // >
+          //   <PlusOutlined /> 新建
+          // </Button>,
           <Button
-            type="primary"
-            key="primary"
-            onClick={() => {
-              handleModalOpen(true);
-            }}
-          >
-            <PlusOutlined /> 新建
-          </Button>,
+          type="primary"
+          key="primary"
+          onClick={() => {
+            handleImportModalOpen(true);
+          }}
+        >
+          <UploadOutlined /> 导入
+        </Button>,
+        <Button
+        type="default"
+        key="export"
+        loading={exportExcelLoading}
+        onClick={() => {
+          exportExcel();
+        }}
+      >
+        <ExportOutlined /> 导出数据
+      </Button>,
+        <Button
+        type="default"
+        key="primary"
+        onClick={() => {
+          downloadMemberTemplate();
+        }}
+      >
+        <ExportOutlined /> 导入模板下载
+      </Button>
         ]}
-        request={async (params: any) => {
-          const response = await member(params.current, params.pageSize);
-          return {
-            data: response.data.records,
-          };
+        request={async (params: any, sort: Record<string, SortOrder>, filter: Record<string, (string | number)[] | null>) => {
+          const response = await member({
+            ...params,
+            sort
+          });
+        if (response?.data) {
+          setTableData(response?.data.records);
+          return  {
+            data: response?.data.records || [],
+            success: true,
+            total: response.total,
+          }
+        }
         }}
         columns={columns}
-        rowSelection={{
-          onChange: (_, selectedRows) => {
-            setSelectedRows(selectedRows);
-          },
-        }}
+        // rowSelection={{
+        //   onChange: (_, selectedRows) => {
+        //     setSelectedRows(selectedRows);
+        //   },
+        // }}
       />
       {selectedRowsState?.length > 0 && (
         <FooterToolbar
@@ -272,7 +424,7 @@ const TableList: React.FC = () => {
         </FooterToolbar>
       )}
       <ModalForm
-        title={'新建规则'}
+        title={'创建规则'}
         width="400px"
         open={createModalOpen}
         onOpenChange={handleModalOpen}
@@ -285,7 +437,7 @@ const TableList: React.FC = () => {
             }
           }
         }}
-      >
+      >  
         <ProFormText
           rules={[
             {
@@ -297,6 +449,28 @@ const TableList: React.FC = () => {
           name="name"
         />
         <ProFormTextArea width="md" name="desc" />
+      </ModalForm>
+      <ModalForm
+        title={'导入会员信息'}
+        width="400px"
+        open={importModalOpen}
+        onOpenChange={handleImportModalOpen}
+        onFinish={(value) => handleUpload(uploadedFile)}
+        onCancel={() => {
+          handleImportModalOpen(false);
+          setUploadedFile(null);
+          if (!showDetail) {
+            setCurrentRow(undefined);
+          }
+        }}
+      >
+        <Upload
+          name="file"
+          onChange={handleUploadChange}
+          showUploadList={false}
+        >
+          <Button><UploadOutlined />选择文件</Button>
+        </Upload>
       </ModalForm>
       <UpdateForm
         onSubmit={async (value) => {
@@ -343,6 +517,7 @@ const TableList: React.FC = () => {
         )}
       </Drawer>
     </PageContainer>
+    </Spin>
   );
 };
 export default TableList;
