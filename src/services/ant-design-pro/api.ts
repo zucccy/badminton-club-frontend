@@ -73,7 +73,7 @@ export async function member(
   },
   options?: { [key: string]: any },
 ) {
-  return request<API.RuleList>('/api/member/list', {
+  return request<API.MemberList>('/api/member/list', {
     method: 'GET',
     params: {
       ...params,
@@ -84,7 +84,7 @@ export async function member(
 
 /** 更新规则 PUT /api/rule */
 export async function updateRule(options?: { [key: string]: any }) {
-  return request<API.RuleListItem>('/api/rule', {
+  return request<API.MemberListItem>('/api/rule', {
     method: 'POST',
     data:{
       method: 'update',
@@ -95,7 +95,7 @@ export async function updateRule(options?: { [key: string]: any }) {
 
 /** 新建规则 POST /api/rule */
 export async function addRule(options?: { [key: string]: any }) {
-  return request<API.RuleListItem>('/api/rule', {
+  return request<API.MemberListItem>('/api/rule', {
     method: 'POST',
     data:{
       method: 'post',

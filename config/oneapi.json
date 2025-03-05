@@ -193,7 +193,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RuleList"
+                  "$ref": "#/components/schemas/MemberList"
                 }
               }
             }
@@ -220,7 +220,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RuleListItem"
+                  "$ref": "#/components/schemas/MemberListItem"
                 }
               }
             }
@@ -247,7 +247,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RuleListItem"
+                  "$ref": "#/components/schemas/MemberListItem"
                 }
               }
             }
@@ -411,7 +411,7 @@
           }
         }
       },
-      "RuleListItem": {
+      "MemberListItem": {
         "type": "object",
         "properties": {
           "key": {
@@ -458,13 +458,13 @@
           }
         }
       },
-      "RuleList": {
+      "MemberList": {
         "type": "object",
         "properties": {
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/RuleListItem"
+              "$ref": "#/components/schemas/MemberListItem"
             }
           },
           "total": {

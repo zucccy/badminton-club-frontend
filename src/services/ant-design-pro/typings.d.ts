@@ -36,26 +36,38 @@ declare namespace API {
     sortOrder?: string;
   };
 
-  type RuleListItem = {
+  type MemberListItem = {
     id?: string;
     name?: string;
     gender?: string;
     age?: number;
     phone?: string;
+    nation?: string;
+    origin_address?: string;
+    home_address?: string;
+    work_unit?: string;
+    occupation?: string;
+    political_party?: string;
+    club_duty?: string;
+    is_civil_servant?: string;
+    is_cadre?: string;
+    is_veteran?: string;
+    athlete_level?: string;
+    referee_level?: string;
+    honour_info?: string;
+    height?: number;
+    weight?: number;
+    uniform_size?: string;
+    residence_area?: string;
+    current_club_id?: number;
+    current_club_name?: string;
     current_level?: string;
-    disabled?: boolean;
-    href?: string;
-    avatar?: string;
-    desc?: string;
-    callNo?: number;
-    status?: number;
     create_time?: string;
     update_time?: string;
-    progress?: number;
   };
 
-  type RuleList = {
-    records?: RuleListItem[];
+  type MemberList = {
+    records?: MemberListItem[];
     /** 列表的内容总数 */
     total?: number;
     success?: boolean;

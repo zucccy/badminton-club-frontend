@@ -23,7 +23,7 @@ const ExportJsonExcel = require('js-export-excel');
  * @zh-CN 添加节点
  * @param fields
  */
-const handleAdd = async (fields: API.RuleListItem) => {
+const handleAdd = async (fields: API.MemberListItem) => {
   const hide = message.loading('正在添加');
   try {
     await addRule({
@@ -69,7 +69,7 @@ const handleUpdate = async (fields: FormValueType) => {
  *
  * @param selectedRows
  */
-const handleRemove = async (selectedRows: API.RuleListItem[]) => {
+const handleRemove = async (selectedRows: API.MemberListItem[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
@@ -99,11 +99,11 @@ const TableList: React.FC = () => {
   const [updateModalOpen, handleUpdateModalOpen] = useState<boolean>(false);
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<API.RuleListItem>();
-  const [selectedRowsState, setSelectedRows] = useState<API.RuleListItem[]>([]);
+  const [currentRow, setCurrentRow] = useState<API.MemberListItem>();
+  const [selectedRowsState, setSelectedRows] = useState<API.MemberListItem[]>([]);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [exportExcelLoading, setExportExcelLoading] = useState(false); //导出loading
-  const [tableData, setTableData] = useState<API.RuleListItem[]>([]);
+  const [tableData, setTableData] = useState<API.MemberListItem[]>([]);
 
 
   const downloadMemberTemplate = async() => {
@@ -122,9 +122,22 @@ const TableList: React.FC = () => {
     }
   };
 
+  // 定义一个函数来格式化时间
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0')
+    return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
+  }
+
   const exportExcel = () => {
     setExportExcelLoading(true);
-    let sheetFilter = ['id', 'name', 'gender', 'age', 'phone', 'current_level', 'create_time', 'update_time'];
+    let sheetFilter = ['id', 'name', 'gender', 'age', 'phone', 'nation', 'origin_address', 'home_address', 'work_unit', 'occupation', 'political_party',
+       'club_duty', 'is_civil_servant', 'is_cadre', 'is_veteran', 'athlete_level', 'referee_level', 'honour_info', 'height', 'weight', 'uniform_size', 
+       'residence_area', 'current_club_name', 'current_level'];
     // 遍历选中的行数据
     // tableData.forEach((item) => {
     //   if (item.gender === 'male') {
@@ -134,7 +147,7 @@ const TableList: React.FC = () => {
     //   }
     // });
     let option: any = {};
-    option.fileName = '会员信息表_' + uuidv4().slice(0, 6);
+    option.fileName = '会员信息表_' + `${formatDate(new Date())}`;
     option.datas = [
       {
         sheetData: tableData,      //根据需求请求过来的json数据
@@ -143,12 +156,28 @@ const TableList: React.FC = () => {
         sheetHeader: [             //表头，与sheetFilter 中各字段对应
           '唯一编号',
           '姓名',
-          '性别',
+          '性别（男/女）',
           '年龄',
           '手机号',
-          '当前组别',
-          '创建时间',
-          '修改时间'
+          '民族',
+          '籍贯',
+          '家庭住址',
+          '工作单位',
+          '职业',
+          '党派',
+          '俱乐部职务',
+          '是否公务员（是/否）',
+          '是否科局级及以上（是/否）',
+          '是否退役军人（是/否）',
+          '专业运动员等级（国家级/省级/市级/县级）',
+          '裁判员等级（国家级/一级/二级/三级）',
+          '荣誉信息',
+          '身高（cm）',
+          '体重（kg）',
+          '服装尺寸',
+          '人员归属地（龙港、苍南、平阳、温州市内、浙江省内、浙江省外）',
+          '当前所属俱乐部名',
+          '组别（甲组/乙组/丙组）'
         ],
       },
     ];
@@ -171,7 +200,7 @@ const handleUpload = async (file: File) => {
     try {
       // 发送 POST 请求到后端 /api/member/import 接口
       const response = await importMemberList(file);
-      if (response.code === 200 && response.data.processNum !== 0) {
+      if (response.code === 200 && response.data.errorInfoList?.length === 0) {
         message.success('会员信息导入成功');
         // 上传成功后可以选择关闭 Modal
         handleImportModalOpen(false);
@@ -180,7 +209,12 @@ const handleUpload = async (file: File) => {
           actionRef.current.reload();
         }
       } else {
-        message.error('会员信息导入失败，原因：' + response.msg);
+        message.error('会员信息导入失败');
+        let arrays = [];
+        response.data.errorInfoList.forEach((item) => {
+          arrays.push("未导入行号: " + item.rowNum + ", " + "原因: " + item.message + "。")
+        });
+        message.error(arrays.join(" "));
       }
     } catch (error) {
       console.error('会员信息导入失败', error);
@@ -189,7 +223,7 @@ const handleUpload = async (file: File) => {
   }
 };
 
-  const columns: ProColumns<API.RuleListItem>[] = [
+  const columns: ProColumns<API.MemberListItem>[] = [
     {
       title: 'ID',
       dataIndex: 'id',
@@ -249,21 +283,179 @@ const handleUpload = async (file: File) => {
     {
       title: '当前组别',
       dataIndex: 'current_level',
-      hideInForm: true,
       valueEnum: {
         0: {
-          text: '甲组',
-          status: '0',
+          text: '甲组'
         },
         1: {
-          text: '乙组',
-          status: '1',
+          text: '乙组'
         },
         2: {
-          text: '丙组',
-          status: '2',
+          text: '丙组'
         },
       },
+    },
+    {
+      title: '民族',
+      dataIndex: 'nation',
+      search: false,
+    },
+    {
+      title: '籍贯',
+      dataIndex: 'origin_address',
+      search: false,
+    },
+    {
+      title: '家庭住址',
+      dataIndex: 'home_address',
+      search: false,
+    },
+    {
+      title: '工作单位',
+      dataIndex: 'work_unit',
+      search: false,
+    },
+    {
+      title: '职业',
+      dataIndex: 'occupation',
+      search: false,
+    },
+    {
+      title: '党派',
+      dataIndex: 'political_party',
+      search: false,
+    },
+    {
+      title: '俱乐部职务',
+      dataIndex: 'club_duty',
+      search: false,
+    },
+    {
+      title: '是否公务员',
+      dataIndex: 'is_civil_servant',
+      valueEnum: {
+        false: {
+          text: '否'
+        },
+        true: {
+          text: '是'
+        },
+      },
+    },
+    {
+      title: '是否科局级及以上',
+      dataIndex: 'is_cadre',
+      valueEnum: {
+        false: {
+          text: '否'
+        },
+        true: {
+          text: '是'
+        },
+      },
+    },
+    {
+      title: '是否退役军人',
+      dataIndex: 'is_veteran',
+      valueEnum: {
+        false: {
+          text: '否'
+        },
+        true: {
+          text: '是'
+        },
+      },
+    },
+    {
+      title: '专业运动员等级',
+      dataIndex: 'athlete_level',
+      valueEnum: {
+        'national': {
+          text: '国家级'
+        },
+        'provincial': {
+          text: '省级'
+        },
+        'city': {
+          text: '市级'
+        },
+        'county': {
+          text: '县级'
+        },
+      },
+    },
+    {
+      title: '裁判员等级',
+      dataIndex: 'referee_level',
+      valueEnum: {
+        'national': {
+          text: '国家级'
+        },
+        'first': {
+          text: '一级'
+        },
+        'second': {
+          text: '二级'
+        },
+        'third': {
+          text: '三级'
+        },
+      },
+    },
+    {
+      title: '荣誉信息',
+      dataIndex: 'honour_info',
+      search: false,
+    },
+    {
+      title: '身高',
+      dataIndex: 'height',
+      renderText: (val: string) => `${val}${'cm'}`,
+      search: false,
+    },
+    {
+      title: '体重',
+      dataIndex: 'weight',
+      renderText: (val: string) => `${val}${'kg'}`,
+      search: false,
+    },
+    {
+      title: '服装尺寸',
+      dataIndex: 'uniform_size',
+      search: false,
+    },
+    {
+      title: '人员归属地',
+      dataIndex: 'residence_area',
+      valueEnum: {
+        'long_gang': {
+          text: '龙港'
+        },
+        'cang_nan': {
+          text: '苍南'
+        },
+        'ping_yang': {
+          text: '平阳'
+        },
+        'wen_zhou': {
+          text: '温州市内'
+        },
+        'zhe_jiang': {
+          text: '浙江省内'
+        },
+        'other': {
+          text: '浙江省外'
+        },
+      },
+    },
+    {
+      title: '当前所属俱乐部ID',
+      dataIndex: 'current_club_id',
+    },
+    {
+      title: '当前所属俱乐部名',
+      dataIndex: 'current_club_name',
+      search: false,
     },
     {
       title: '创建时间',
@@ -271,16 +463,6 @@ const handleUpload = async (file: File) => {
       search: false,
       dataIndex: 'create_time',
       valueType: 'dateTime',
-      renderFormItem: (item, { defaultRender, ...rest }, form) => {
-        const status = form.getFieldValue('status');
-        if (`${status}` === '0') {
-          return false;
-        }
-        if (`${status}` === '3') {
-          return <Input {...rest} placeholder={'请输入异常原因！'} />;
-        }
-        return defaultRender(item);
-      },
     },
     {
       title: '修改时间',
@@ -288,16 +470,6 @@ const handleUpload = async (file: File) => {
       search: false,
       dataIndex: 'update_time',
       valueType: 'dateTime',
-      renderFormItem: (item, { defaultRender, ...rest }, form) => {
-        const status = form.getFieldValue('status');
-        if (`${status}` === '0') {
-          return false;
-        }
-        if (`${status}` === '3') {
-          return <Input {...rest} placeholder={'请输入异常原因！'} />;
-        }
-        return defaultRender(item);
-      },
     },
     // {
     //   title: '操作',
@@ -322,7 +494,7 @@ const handleUpload = async (file: File) => {
   return (
     <Spin spinning={exportExcelLoading} tip="数据导出中...">
     <PageContainer>
-      <ProTable<API.RuleListItem, API.PageParams>
+      <ProTable<API.MemberListItem, API.PageParams>
         headerTitle={'会员信息'}
         actionRef={actionRef}
         rowKey="id"
@@ -429,7 +601,7 @@ const handleUpload = async (file: File) => {
         open={createModalOpen}
         onOpenChange={handleModalOpen}
         onFinish={async (value) => {
-          const success = await handleAdd(value as API.RuleListItem);
+          const success = await handleAdd(value as API.MemberListItem);
           if (success) {
             handleModalOpen(false);
             if (actionRef.current) {
@@ -503,7 +675,7 @@ const handleUpload = async (file: File) => {
         closable={false}
       >
         {currentRow?.name && (
-          <ProDescriptions<API.RuleListItem>
+          <ProDescriptions<API.MemberListItem>
             column={2}
             title={currentRow?.name}
             request={async () => ({
@@ -512,7 +684,7 @@ const handleUpload = async (file: File) => {
             params={{
               id: currentRow?.name,
             }}
-            columns={columns as ProDescriptionsItemProps<API.RuleListItem>[]}
+            columns={columns as ProDescriptionsItemProps<API.MemberListItem>[]}
           />
         )}
       </Drawer>

@@ -4,7 +4,7 @@ import { parse } from 'url';
 
 // mock tableListDataSource
 const genList = (current: number, pageSize: number) => {
-  const tableListDataSource: API.RuleListItem[] = [];
+  const tableListDataSource: API.MemberListItem[] = [];
 
   for (let i = 0; i < pageSize; i += 1) {
     const index = (current - 1) * 10 + i;
@@ -39,7 +39,7 @@ function getRule(req: Request, res: Response, u: string) {
   }
   const { current = 1, pageSize = 10 } = req.query;
   const params = parse(realUrl, true).query as unknown as API.PageParams &
-    API.RuleListItem & {
+    API.MemberListItem & {
       sorter: any;
       filter: any;
     };
@@ -52,7 +52,7 @@ function getRule(req: Request, res: Response, u: string) {
     const sorter = JSON.parse(params.sorter);
     dataSource = dataSource.sort((prev, next) => {
       let sortNumber = 0;
-      (Object.keys(sorter) as Array<keyof API.RuleListItem>).forEach((key) => {
+      (Object.keys(sorter) as Array<keyof API.MemberListItem>).forEach((key) => {
         let nextSort = next?.[key] as number;
         let preSort = prev?.[key] as number;
         if (sorter[key] === 'descend') {
@@ -78,7 +78,7 @@ function getRule(req: Request, res: Response, u: string) {
     };
     if (Object.keys(filter).length > 0) {
       dataSource = dataSource.filter((item) => {
-        return (Object.keys(filter) as Array<keyof API.RuleListItem>).some((key) => {
+        return (Object.keys(filter) as Array<keyof API.MemberListItem>).some((key) => {
           if (!filter[key]) {
             return true;
           }
@@ -122,7 +122,7 @@ function postRule(req: Request, res: Response, u: string, b: Request) {
     case 'post':
       (() => {
         const i = Math.ceil(Math.random() * 10000);
-        const newRule: API.RuleListItem = {
+        const newRule: API.MemberListItem = {
           key: tableListDataSource.length,
           href: 'https://ant.design',
           avatar: [
