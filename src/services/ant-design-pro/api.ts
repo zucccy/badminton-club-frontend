@@ -69,7 +69,6 @@ export async function member(
     current?: number;
     /** 页面的容量 */
     pageSize?: number;
-    name?: string;
   },
   options?: { [key: string]: any },
 ) {
@@ -93,9 +92,9 @@ export async function updateRule(options?: { [key: string]: any }) {
   });
 }
 
-/** 新建规则 POST /api/rule */
-export async function addRule(options?: { [key: string]: any }) {
-  return request<API.MemberListItem>('/api/rule', {
+/** 新建会员 POST /api/member/add */
+export async function addMember(options?: { [key: string]: any }) {
+  return request<API.MemberListItem>('/api/member/add', {
     method: 'POST',
     data:{
       method: 'post',
@@ -104,13 +103,60 @@ export async function addRule(options?: { [key: string]: any }) {
   });
 }
 
-/** 删除规则 DELETE /api/rule */
-export async function removeRule(options?: { [key: string]: any }) {
-  return request<Record<string, any>>('/api/rule', {
-    method: 'POST',
+/** 删除规则 DELETE /api/member/delete */
+export async function removeMember(options?: { [idList: number]: any }) {
+  return request<Record<string, any>>('/api/member/delete', {
+    method: 'DELETE',
     data:{
       method: 'delete',
       ...(options || {}),
     }
+  });
+}
+
+export async function getAllClubName(options?: { [key: string]: any }) {
+  return request<API.ClubNameMap>('/api/club/get_all_club_name', {
+    method: 'GET',
+    ...(options || {}),
+  });
+}
+
+export async function addClub(options?: { [key: string]: any }) {
+  return request<API.ClubListItem>('/api/club/add', {
+    method: 'POST',
+    data:{
+      method: 'post',
+      ...(options || {}),
+    }
+  });
+}
+
+/** 删除规则 DELETE /api/member/delete */
+export async function removeClub(options?: { [idList: number]: any }) {
+  return request<Record<string, any>>('/api/club/delete', {
+    method: 'DELETE',
+    data:{
+      method: 'delete',
+      ...(options || {}),
+    }
+  });
+}
+
+export async function clubList(
+  params: {
+    // query
+    /** 当前的页码 */
+    current?: number;
+    /** 页面的容量 */
+    pageSize?: number;
+  },
+  options?: { [key: string]: any },
+) {
+  return request<API.ClubList>('/api/club/list', {
+    method: 'GET',
+    params: {
+      ...params,
+    },
+    ...(options || {}),
   });
 }

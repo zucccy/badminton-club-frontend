@@ -1,4 +1,4 @@
-import { addRule, removeRule, member, updateRule, importMemberList, downloadTemplate } from '@/services/ant-design-pro/api';
+import { getAllClubName, addMember, removeMember, member, updateRule, importMemberList, downloadTemplate } from '@/services/ant-design-pro/api';
 import { PlusOutlined, UploadOutlined, ExportOutlined } from '@ant-design/icons';
 import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
 import {
@@ -8,15 +8,20 @@ import {
   ProDescriptions,
   ProFormText,
   ProFormTextArea,
+  ProFormGroup,
+  ProFormSelect,
   ProTable,
+  ProFormDatePicker,
+  ProFormDigit,
+
 } from '@ant-design/pro-components';
 import '@umijs/max';
-import { Button, Drawer, Input, message, Upload, Spin } from 'antd';
+import { Button, Drawer, Input, message, Upload, Spin, List } from 'antd';
 import React, { useRef, useState } from 'react';
 import type { FormValueType } from './components/UpdateForm';
 import UpdateForm from './components/UpdateForm';
-import { v4 as uuidv4 } from 'uuid';
 const ExportJsonExcel = require('js-export-excel');
+
 
 /**
  * @en-US Add node
@@ -26,15 +31,20 @@ const ExportJsonExcel = require('js-export-excel');
 const handleAdd = async (fields: API.MemberListItem) => {
   const hide = message.loading('正在添加');
   try {
-    await addRule({
+    const response = await addMember({
       ...fields,
     });
     hide();
-    message.success('Added successfully');
-    return true;
+    if (response?.code === 200) {
+        message.success('添加成功，会员ID为' + response?.data);
+        return true;
+    } else {
+      message.error('添加失败，请重试！原因是：' + response?.msg);
+      return false;
+    }
   } catch (error) {
     hide();
-    message.error('Adding failed, please try again!');
+    message.error('添加失败，请重试！');
     return false;
   }
 };
@@ -45,23 +55,23 @@ const handleAdd = async (fields: API.MemberListItem) => {
  *
  * @param fields
  */
-const handleUpdate = async (fields: FormValueType) => {
-  const hide = message.loading('Configuring');
-  try {
-    await updateRule({
-      name: fields.name,
-      desc: fields.desc,
-      key: fields.id,
-    });
-    hide();
-    message.success('Configuration is successful');
-    return true;
-  } catch (error) {
-    hide();
-    message.error('Configuration failed, please try again!');
-    return false;
-  }
-};
+// const handleUpdate = async (fields: FormValueType) => {
+//   const hide = message.loading('Configuring');
+//   try {
+//     await updateRule({
+//       name: fields.name,
+//       desc: fields.desc,
+//       key: fields.id,
+//     });
+//     hide();
+//     message.success('Configuration is successful');
+//     return true;
+//   } catch (error) {
+//     hide();
+//     message.error('Configuration failed, please try again!');
+//     return false;
+//   }
+// };
 
 /**
  *  Delete node
@@ -73,15 +83,19 @@ const handleRemove = async (selectedRows: API.MemberListItem[]) => {
   const hide = message.loading('正在删除');
   if (!selectedRows) return true;
   try {
-    await removeRule({
-      key: selectedRows.map((row) => row.id),
+    const response = await removeMember({
+      idList: selectedRows.map((row) => parseInt(row.id)),
     });
     hide();
-    message.success('Deleted successfully and will refresh soon');
-    return true;
+    if (response?.code === 200) {
+        message.success('删除成功，共计删除会员' + response?.data + "位");
+        return true;
+    } else {
+        message.error('删除失败，请重试！原因是：' + response?.msg)
+    }
   } catch (error) {
     hide();
-    message.error('Delete failed, please try again');
+    message.error('删除失败，请重试！');
     return false;
   }
 };
@@ -105,6 +119,18 @@ const TableList: React.FC = () => {
   const [exportExcelLoading, setExportExcelLoading] = useState(false); //导出loading
   const [tableData, setTableData] = useState<API.MemberListItem[]>([]);
 
+  const getAllClubNames = async() => {
+    try {
+      const response = await getAllClubName();
+      if (response?.code === 200) {
+        // console.log(response?.data);
+        return response?.data;
+      }
+    } catch (error) {
+      message.error('获取所有俱乐部名失败，请重试!');
+      return new Array;
+    }
+  }
 
   const downloadMemberTemplate = async() => {
     try {
@@ -186,13 +212,24 @@ const TableList: React.FC = () => {
     setExportExcelLoading(false);
   };
 
-const handleUploadChange = (info: any) => {
-  if (info.file.status === 'done') {
-    setUploadedFile(info.file.originFileObj);
-  } else if (info.file.status === 'error') {
-    message.error('文件上传失败');
+const beforeUpload = (file: any) => {
+  try {
+    // 返回 false 阻止自动上传
+    setUploadedFile(file);
+    message.success("文件上传成功，请点击确定按钮开始导入");
+  } catch(error) {
+    message.error("文件上传失败，原因：" + error);
   }
+  return false;
 };
+
+// const handleUploadChange = (info: any) => {
+//   if (info.file.status === 'done') {
+//     setUploadedFile(info.file.originFileObj);
+//   } else if (info.file.status === 'error') {
+//     message.error('文件上传失败');
+//   }
+// };
 
 // 处理文件上传的函数
 const handleUpload = async (file: File) => {
@@ -222,6 +259,8 @@ const handleUpload = async (file: File) => {
     setUploadedFile(null);
   }
 };
+
+const request = async () => getAllClubNames();
 
   const columns: ProColumns<API.MemberListItem>[] = [
     {
@@ -451,11 +490,14 @@ const handleUpload = async (file: File) => {
     {
       title: '当前所属俱乐部ID',
       dataIndex: 'current_club_id',
+      search: false,
     },
     {
       title: '当前所属俱乐部名',
       dataIndex: 'current_club_name',
-      search: false,
+      request,
+      valueType: 'select',
+      params: {},
     },
     {
       title: '创建时间',
@@ -505,15 +547,15 @@ const handleUpload = async (file: File) => {
           labelWidth: 120
         }}
         toolBarRender={() => [
-          // <Button
-          //   type="primary"
-          //   key="primary"
-          //   onClick={() => {
-          //     handleModalOpen(true);
-          //   }}
-          // >
-          //   <PlusOutlined /> 新建
-          // </Button>,
+          <Button
+            type="primary"
+            key="primary"
+            onClick={() => {
+              handleModalOpen(true);
+            }}
+          >
+            <PlusOutlined /> 新增会员
+          </Button>,
           <Button
           type="primary"
           key="primary"
@@ -521,7 +563,7 @@ const handleUpload = async (file: File) => {
             handleImportModalOpen(true);
           }}
         >
-          <UploadOutlined /> 导入
+          <UploadOutlined /> 批量导入会员
         </Button>,
         <Button
         type="default"
@@ -531,7 +573,7 @@ const handleUpload = async (file: File) => {
           exportExcel();
         }}
       >
-        <ExportOutlined /> 导出数据
+        <ExportOutlined /> 导出会员
       </Button>,
         <Button
         type="default"
@@ -558,11 +600,11 @@ const handleUpload = async (file: File) => {
         }
         }}
         columns={columns}
-        // rowSelection={{
-        //   onChange: (_, selectedRows) => {
-        //     setSelectedRows(selectedRows);
-        //   },
-        // }}
+        rowSelection={{
+          onChange: (_, selectedRows) => {
+            setSelectedRows(selectedRows);
+          },
+        }}
       />
       {selectedRowsState?.length > 0 && (
         <FooterToolbar
@@ -577,9 +619,6 @@ const handleUpload = async (file: File) => {
                 {selectedRowsState.length}
               </a>{' '}
               项 &nbsp;&nbsp;
-              <span>
-                服务调用次数总计 {selectedRowsState.reduce((pre, item) => pre + item.callNo!, 0)} 万
-              </span>
             </div>
           }
         >
@@ -592,12 +631,12 @@ const handleUpload = async (file: File) => {
           >
             批量删除
           </Button>
-          <Button type="primary">批量审批</Button>
+          {/* <Button type="primary">批量审批</Button> */}
         </FooterToolbar>
       )}
       <ModalForm
-        title={'创建规则'}
-        width="400px"
+        title={'添加会员'}
+        width="1600px"
         open={createModalOpen}
         onOpenChange={handleModalOpen}
         onFinish={async (value) => {
@@ -609,19 +648,223 @@ const handleUpload = async (file: File) => {
             }
           }
         }}
-      >  
+      >
+      <ProFormGroup>
         <ProFormText
+        label="姓名"
           rules={[
             {
               required: true,
-              message: '规则名称为必填项',
+              message: '姓名为必填项',
             },
           ]}
-          width="md"
+          placeholder="请输入姓名"
+          width="sm"
           name="name"
         />
-        <ProFormTextArea width="md" name="desc" />
+        <ProFormDatePicker
+        width="sm"
+          rules={[
+            {
+              required: true,
+              message: '出生日期为必填项',
+            },
+          ]}
+          name="birth_date"
+          label="出生日期" 
+          placeholder="请选择出生日期" />
+        <ProFormText
+        label="手机号"
+          rules={[
+            {
+              required: true,
+              message: '手机号为必填项',
+            },
+          ]}
+          placeholder="请输入手机号"
+          width="md"
+          name="phone"
+        />
+        <ProFormSelect
+        label="性别"
+          valueEnum={{
+            男: '男',
+            女: '女',
+          }}
+          placeholder="请选择性别，默认为男"
+          width="sm"
+          name="gender"
+        />
+        <ProFormSelect
+        label="人员归属地"
+          valueEnum={{
+            龙港: '龙港',
+            苍南: '苍南',
+            平阳: '平阳',
+            温州市内: '温州市内',
+            浙江省内: '浙江省内',
+            浙江省外: '浙江省外',
+          }}
+          placeholder="请选择，默认龙港"
+          width="md"
+          name="residence_area"
+        />
+        <ProFormSelect
+        label="组别"
+          valueEnum={{
+            甲组: '甲组',
+            乙组: '乙组',
+            丙组: '丙组',
+          }}
+          placeholder="请选择，默认丙组"
+          width="md"
+          name="current_level"
+        />
+      <ProFormSelect
+          width="md"
+          placeholder="请选择，可不填"
+          request={async () => getAllClubNames()}
+          name="current_club_name"
+          label="当前所属俱乐部名"
+        />
+        <ProFormSelect
+        label="专业运动员等级"
+          valueEnum={{
+            国家级: '国家级',
+            省级: '省级',
+            市级: '市级',
+            县级: '县级',
+          }}
+          placeholder="请选择，可不填"
+          width="md"
+          name="athlete_level"
+        />
+        <ProFormSelect
+        label="裁判员等级"
+          valueEnum={{
+            国家级: '国家级',
+            一级: '一级',
+            二级: '二级',
+            三级: '三级',
+          }}
+          placeholder="请选择，可不填"
+          width="md"
+          name="referee_level"
+        />
+        <ProFormText
+        label="民族"
+          placeholder="请输入民族，可不填"
+          width="md"
+          name="nation"
+        />
+        <ProFormText
+        label="籍贯"
+          placeholder="请输入籍贯，可不填"
+          width="md"
+          name="origin_address"
+        />
+        <ProFormText
+        label="家庭住址"
+          placeholder="请输入家庭住址，可不填"
+          width="md"
+          name="home_address"
+        />
+        <ProFormText
+        label="工作单位"
+          placeholder="请输入工作单位，可不填"
+          width="md"
+          name="work_unit"
+        />
+        <ProFormText
+        label="职业"
+          placeholder="请输入职业，可不填"
+          width="md"
+          name="occupation"
+        />
+        <ProFormText
+        label="党派"
+          placeholder="请输入党派，可不填"
+          width="md"
+          name="political_party"
+        />
+        <ProFormText
+        label="俱乐部职务"
+          placeholder="请输入俱乐部职务，可不填"
+          width="md"
+          name="club_duty"
+        />
+        <ProFormText
+        label="工作单位"
+          placeholder="请输入工作单位，可不填"
+          width="md"
+          name="work_unit"
+        />
+        <ProFormSelect
+        label="是否公务员"
+          valueEnum={{
+            是: '是',
+            否: '否',
+          }}
+          placeholder="请选择，可不填"
+          width="sm"
+          name="is_civil_servant"
+        />
+        <ProFormSelect
+        label="是否科局级及以上"
+          valueEnum={{
+            是: '是',
+            否: '否',
+          }}
+          placeholder="请选择，可不填"
+          width="sm"
+          name="is_cadre"
+        />
+        <ProFormSelect
+        label="是否退役军人"
+          valueEnum={{
+            是: '是',
+            否: '否',
+          }}
+          placeholder="请选择，可不填"
+          width="sm"
+          name="is_veteran"
+        />
+        <ProFormDigit
+          label="身高（cm）"
+          name="height"
+          width="md"
+          min={40}
+          max={250}
+        />
+        <ProFormDigit
+          label="体重（kg）"
+          name="weight"
+          width="md"
+          min={0}
+          max={500}
+        />
+        <ProFormSelect
+        label="服装尺寸"
+          valueEnum={{
+            S: 'S',
+            M: 'M',
+            L: 'L',
+            XL: 'XL',
+            XXL: 'XXL',
+          }}
+          placeholder="请选择，可不填"
+          width="md"
+          name="uniform_size"
+        />
+        <ProFormTextArea
+        label="荣誉信息"
+          placeholder="请输入荣誉信息，可不填"
+          width="xl"
+          name="work_unit"
+        />
+      </ProFormGroup>
       </ModalForm>
+      
       <ModalForm
         title={'导入会员信息'}
         width="400px"
@@ -638,7 +881,7 @@ const handleUpload = async (file: File) => {
       >
         <Upload
           name="file"
-          onChange={handleUploadChange}
+          beforeUpload={beforeUpload}
           showUploadList={false}
         >
           <Button><UploadOutlined />选择文件</Button>

@@ -36,10 +36,25 @@ declare namespace API {
     sortOrder?: string;
   };
 
+  type ClubListItem = {
+    id?: string;
+    club_name?: string;
+    create_time?: string;
+    update_time?: string;
+  }
+
+  type ClubList = {
+    records?: ClubListItem[];
+    /** 列表的内容总数 */
+    total?: number;
+    success?: boolean;
+  };
+
   type MemberListItem = {
     id?: string;
     name?: string;
     gender?: string;
+    birth_date?: string;
     age?: number;
     phone?: string;
     nation?: string;
@@ -72,6 +87,10 @@ declare namespace API {
     total?: number;
     success?: boolean;
   };
+
+  type ClubNameMap = {
+      obj?: Map;
+  }
 
   type FakeCaptcha = {
     code?: number;
