@@ -77,6 +77,7 @@ declare namespace API {
     current_club_id?: number;
     current_club_name?: string;
     current_level?: string;
+    id_number?: string;
     create_time?: string;
     update_time?: string;
   };

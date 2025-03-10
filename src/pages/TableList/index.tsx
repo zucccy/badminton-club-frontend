@@ -163,7 +163,7 @@ const TableList: React.FC = () => {
     setExportExcelLoading(true);
     let sheetFilter = ['id', 'name', 'gender', 'age', 'phone', 'nation', 'origin_address', 'home_address', 'work_unit', 'occupation', 'political_party',
        'club_duty', 'is_civil_servant', 'is_cadre', 'is_veteran', 'athlete_level', 'referee_level', 'honour_info', 'height', 'weight', 'uniform_size', 
-       'residence_area', 'current_club_name', 'current_level'];
+       'residence_area', 'current_club_name', 'current_level', 'id_number'];
     // 遍历选中的行数据
     // tableData.forEach((item) => {
     //   if (item.gender === 'male') {
@@ -203,7 +203,8 @@ const TableList: React.FC = () => {
           '服装尺寸',
           '人员归属地（龙港、苍南、平阳、温州市内、浙江省内、浙江省外）',
           '当前所属俱乐部名',
-          '组别（甲组/乙组/丙组）'
+          '组别（甲组/乙组/丙组）',
+          '身份证号'
         ],
       },
     ];
@@ -500,6 +501,10 @@ const request = async () => getAllClubNames();
       params: {},
     },
     {
+      title: '身份证号',
+      dataIndex: 'id_number',
+    },
+    {
       title: '创建时间',
       sorter: true,
       search: false,
@@ -684,6 +689,18 @@ const request = async () => getAllClubNames();
           placeholder="请输入手机号"
           width="md"
           name="phone"
+        />
+        <ProFormText
+        label="身份证号"
+          rules={[
+            {
+              required: true,
+              message: '身份证号为必填项',
+            },
+          ]}
+          placeholder="请输入身份证号"
+          width="md"
+          name="id_number"
         />
         <ProFormSelect
         label="性别"
